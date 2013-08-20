@@ -1,0 +1,7 @@
+[nodebase]
+name=Packages for M-Lab Servers - $basearch
+baseurl=http://boot-test.measurementlab.net/mlab-rpms/nodebase-$basearch/
+exclude=kernel* iptables*
+enabled=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-planetlab

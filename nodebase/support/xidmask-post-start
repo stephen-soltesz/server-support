@@ -1,0 +1,42 @@
+#!/bin/bash
+
+# NOTE: this script is 'source'd by the vserver initialization scripts.
+# NOTE: the first argument is the name of the script followed by the vm name.
+SCRIPTNAME=$1
+SLICENAME=$2
+ENABLE_WEB100="0x10000000"
+
+# enable exit-on-error to prevent slice start on errors.
+set -e
+# The slice xid is the same as the UID
+xid=`id -u $SLICENAME`
+if [ -z "$xid" ]; then
+    logger -s "$SCRIPTNAME: Failed to get xid for slice"
+    exit 1
+fi
+
+# NOTE: this field should be added as a slice tag 'capabilities=cap_^28'
+if [ "$SLICENAME" != "mlab_ooni" ] ; then
+    logger -s "$SCRIPTNAME: Adding ENABLE_WEB100 attribute to $SLICENAME"
+    vattribute --xid $xid --set --ccap $ENABLE_WEB100
+fi 
+
+if [ "$SLICENAME" = "iupui_npad" ] ; then
+    logger -s "$SCRIPTNAME: Running for $SLICENAME: " `date --rfc-3339=seconds`
+
+    # set the web100_sidestream_xid using sysctl to the above xid.
+    /sbin/sysctl -q -w net.ipv4.web100_sidestream_xid=$xid
+
+    # verify that the set was successful.
+    found_xid=`/sbin/sysctl -n net.ipv4.web100_sidestream_xid`
+    if [ "$xid" != "$found_xid" ]; then
+        logger -s "$SCRIPTNAME: Could not set web100_sidestream_xid to $xid"
+        exit 1
+    fi
+fi
+
+# disable exit-on-error for rest of slice initialization
+set +e
+
+# TODO: slice should stop if backup fails.
+/usr/sbin/slice_data_backup.py restore $SLICENAME

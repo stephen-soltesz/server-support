@@ -1,0 +1,8 @@
+/var/log/oombailout.log {
+    copytruncate
+    compress
+    daily
+    notifempty
+    rotate 5
+    missingok
+}

@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# This is a set of special post-production environmental 
+# settings that are needed on the MLab hosts.
+
+/sbin/ethtool -C eth0 rx-frames 1 || :
+/sbin/ethtool -K eth0 tso off  || :
+/sbin/ethtool -K eth0 gso off  || :
+/sbin/ethtool -K eth0 gro off  || :
+/sbin/ethtool -K eth0 ufo off  || :
+/sbin/ethtool -K eth0 lro off  || :

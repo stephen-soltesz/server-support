@@ -1,0 +1,40 @@
+#!/usr/bin/python
+
+# NOTE: issue vserver delete & nm restart
+# TODO: add logging
+
+import os
+import sys
+from syslog import syslog
+
+# NOTE: backing up the slice data directory works around both a) losing data in
+# from slice deletion, and b) waiting for the collection pipeline to catch up.
+# TODO: double check diskspace accounting 
+
+slicename = sys.argv[1]
+
+#try:
+#    child_pid = os.fork()
+#    if child_pid != 0:
+#        # NOTE: parent will exit, and a child will carry on.
+#        sys.exit(0)
+#except:
+#    syslog("slice_update: failed to fork for %s" % slicename)
+#    sys.exit(1)
+
+# TODO: check errors, and what should we do on backup error?
+#       maybe a strict halt, to stop the slice and prevent it from restarting
+#       to require operator intervention.
+syslog("slice_update: running backup for %s" % slicename)
+os.system("/usr/sbin/slice_data_backup.py backup %s"% slicename)
+
+syslog("slice_update: shutdown %s" % slicename)
+os.system("/usr/sbin/vserver %s stop"% slicename)
+
+syslog("slice_update: delete %s" % slicename)
+os.system("/usr/sbin/vuserdel %s"% slicename)
+
+# NOTE: restaring nm makes nm check & recreate the slice right away.
+syslog("slice_update: NodeManager restart for %s" % slicename)
+os.system("/sbin/service nm restart")
+

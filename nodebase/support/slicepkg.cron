@@ -1,0 +1,51 @@
+#!/bin/bash
+
+PACKAGEDIR=$( slicepkg.py getconfig signdir )
+VSERVERDIR=$( slicepkg.py getconfig vserverdir )
+set -x
+set -e
+
+if [ ! -d $PACKAGEDIR ] ; then
+    echo "The signed package directory is missing."
+    echo "Looking for: $PACKAGEDIR"
+    exit 1
+fi
+files=$( ls $PACKAGEDIR/*.tar )
+
+for file in $files ; do 
+    echo $file
+    basename=$( basename $file )
+    slicename=${basename/%.tar/}
+    slicebase=$( dirname $file)/slicebase.tar
+    if [ "$slicename" = "slicebase" ] ; then
+        continue
+    fi
+    mkdir -p $VSERVERDIR/$slicename/  # NOTE: ONLY FOR TESTING
+
+    if ! test -d $VSERVERDIR/$slicename/ ; then 
+        # slice not created yet
+        continue
+    fi
+
+    if ! slicepkg.py verifypackage $file ; then
+        # verify failed; bad signature or corruption
+        echo "package NOT Verified!!"
+        continue
+    fi
+
+    if ! slicepkg.py is_unpacked $file ; then
+        # no need to do it again
+        echo "UNPACKING!"
+        slicepkg.py --verbose --slicebase unpack $slicebase $slicename
+        slicepkg.py --verbose unpack $file $slicename
+    fi
+
+    if ! slicepkg.py --verbose verifyinstall $slicename ; then
+        # verify failed, installation has changed.
+        continue
+    fi
+
+    if ! slicepkg.py is_initialized $file ; then
+        slicepkg.py initialize $slicename 
+    fi
+done

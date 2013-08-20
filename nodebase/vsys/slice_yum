@@ -1,0 +1,63 @@
+#!/usr/bin/python
+
+# NOTE: return public keys in root context to slice for use by slice
+# TODO: 
+
+import os
+import sys
+import string
+from syslog import syslog
+
+sys.path.append("/etc/planetlab")
+try:
+    import plc_config
+except:
+    class p: pass
+    plc_config = p()
+    plc_config.PLC_BOOT_HOST = "boot-test.measurementlab.net"
+
+yum_conf_raw = """
+[main]
+cachedir=/var/cache/yum/$basearch/$releasever
+reposdir=/etc/yum.slice.d
+keepcache=0
+debuglevel=2
+logfile=/var/log/yum.log
+exactarch=1
+obsoletes=1
+gpgcheck=1
+plugins=1
+installonly_limit=5
+"""
+
+yum_repo_raw = """
+[slicebase]
+name=The M-Lab slicebase - $basearch
+baseurl=http://%s/mlab-rpms/slicebase-$basearch/
+failovermethod=priority
+enabled=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-planetlab
+
+""" % plc_config.PLC_BOOT_HOST
+
+slicename = sys.argv[1]
+
+filetype = map(string.strip, sys.stdin.readlines())
+syslog("slice_yum: " + slicename + " requested filetype: %s" % filetype)
+if 'gpg' in filetype:
+    # TODO: consider support for other key types, beyond gpg key.
+    if os.path.exists("/etc/pki/rpm-gpg/RPM-GPG-KEY-planetlab"):
+        print open("/etc/pki/rpm-gpg/RPM-GPG-KEY-planetlab", 'r').read()
+elif 'yum.conf' in filetype:
+    print yum_conf_raw
+elif 'repo' in filetype:
+    print yum_repo_raw
+    if os.path.exists("/etc/yum.myplc.d/stock.repo"):
+        print open("/etc/yum.myplc.d/stock.repo", 'r').read()
+else:
+    msg = ("Error: slice_yum received unknown filetype: %s from %s" % 
+          (filetype, slicename))
+    print msg
+    syslog(msg)
+sys.stdout.flush()

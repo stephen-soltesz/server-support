@@ -1,0 +1,60 @@
+#!/usr/bin/python
+
+import os
+import sys
+import struct
+import time
+import binascii
+
+DEBUG_LOG=False
+
+# read data blob in
+data = sys.stdin.read()
+
+# unpack raw data.
+fmt = "iii"     # three ints in a row: int, int, int
+head_len = struct.calcsize(fmt)
+(path_len,offset,data_len) = struct.unpack_from(fmt, data[:head_len])
+path = data[head_len:head_len+path_len]
+val  = data[head_len+path_len:head_len+path_len+data_len]
+
+if DEBUG_LOG:
+	lg = open('/tmp/proc_write.log', 'a+')
+	## write to 'data' to 'path' after 'offset'
+	print >>lg, time.ctime()
+	print >>lg, (path_len,offset,data_len) 
+	print >>lg, "vsys:web100_proc_write"
+	print >>lg, "\tfilename: ", path 
+
+    ## read what we are about to over-write
+	fd = os.open(path, os.O_RDONLY)
+	os.lseek(fd, offset, os.SEEK_SET)
+	orig = os.read(fd, data_len)
+	os.close(fd)
+
+	print >>lg, "\t   orig: 0x: ", binascii.b2a_hex(orig)
+	print >>lg, "\twriting: 0x: ", binascii.b2a_hex(val)
+
+try:
+    wr = os.open(path, os.O_WRONLY)
+    os.lseek(wr, offset, os.SEEK_SET)
+    os.write(wr, val)
+    os.close(wr)
+
+    if DEBUG_LOG:
+        # Try to read what we just wrote.
+        fd = os.open(path, os.O_RDONLY)
+        os.lseek(fd, offset, os.SEEK_SET)
+        newval = os.read(fd, data_len)
+        os.close(fd)
+        print >>lg, "\t reread: 0x: ", binascii.b2a_hex(newval)
+
+    sys.stdout.write("0")
+
+except:
+    import traceback
+    print >>lg, traceback.format_exc()
+    lg.fflush()
+    sys.stdout.write("1")
+
+sys.stdout.flush()

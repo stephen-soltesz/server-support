@@ -1,0 +1,14 @@
+#!/usr/bin/python -u
+
+import sys
+import os
+
+# NOTE: takes no user arguments.
+slicename=sys.argv[1]
+os.system("/usr/sbin/vserver %s restart" % slicename)
+
+#if len(sys.argv) == 2:
+#    os.system("%s %s RUN &" % (sys.argv[0], sys.argv[1]))
+#elif len(sys.argv) == 3:
+#    slicename=sys.argv[1]
+#    os.system("/usr/sbin/vserver %s restart" % slicename)
