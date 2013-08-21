@@ -93,12 +93,14 @@ mkdir -p $RPM_BUILD_ROOT/etc/mlab/config.backup
 
 # NOTE: managed by PLC conffiles to overwrite the PLC defaults.
 # NOTE: after migrating to MLC, we should pull these files back into this rpm.
+# NOTE: see: server-config/central/boot/PlanetLabConf/mlab-centos6/
 #install -D -m 0644 config/sshd_config        $RPM_BUILD_ROOT/etc/mlab/config/ssh/sshd_config
 #install -D -m 0644 config/sysctl.conf        $RPM_BUILD_ROOT/etc/mlab/config/sysctl.conf
 #install -D -m 0644 config/iptables           $RPM_BUILD_ROOT/etc/mlab/config/sysconfig/iptables
 #install -D -m 0644 config/sudoers            $RPM_BUILD_ROOT/etc/mlab/config/sudoers
 
-# oombailout
+# oombailout -- looks for lowmem in kernel and flushes some caches proactively
+#               to prevent OOM crashes.
 install -D -m 755 oombailout/oombailout.py          $RPM_BUILD_ROOT/usr/bin/oombailout.py
 install -D -m 755 oombailout/oombailout-initscript  $RPM_BUILD_ROOT/%{_sysconfdir}/init.d/oombailout
 install -D -m 644 oombailout/oombailout.logrotate   $RPM_BUILD_ROOT/%{_sysconfdir}/logrotate.d/oombailout
